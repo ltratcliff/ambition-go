@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/x-icon" href="/ambition/static/a.png">
+    <title>Productivity Tracker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            text-align: center;
+        }
+        h1 {
+            color: #333;
+        }
+        .button-container {
+            margin: 40px 0;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+        button {
+            padding: 15px 30px;
+            font-size: 18px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        #productive-btn {
+            background-color: #4CAF50;
+            color: white;
+        }
+        #productive-btn:hover {
+            background-color: #45a049;
+        }
+        #non-productive-btn {
+            background-color: #f44336;
+            color: white;
+        }
+        #non-productive-btn:hover {
+            background-color: #d32f2f;
+        }
+        .notification {
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+            display: none;
+        }
+        .success {
+            background-color: #dff0d8;
+            color: #3c763d;
+            border: 1px solid #d6e9c6;
+        }
+        .error {
+            background-color: #f2dede;
+            color: #a94442;
+            border: 1px solid #ebccd1;
+        }
+    </style>
+</head>
+<body>
+    <h1>Daily Productivity Tracker</h1>
+
+    <div class="button-container">
+        <button id="non-productive-btn">Non-Productive</button>
+        <button id="productive-btn">Productive</button>
+    </div>
+
+    <div id="notification" class="notification"></div>
+
+    <script>
+        document.getElementById('productive-btn').addEventListener('click', function() {
+            recordProductivity('productive');
+        });
+
+        document.getElementById('non-productive-btn').addEventListener('click', function() {
+            recordProductivity('non-productive');
+        });
+
+        function recordProductivity(status) {
+            fetch('/ambition/api/record/' + status, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                showNotification(data.message, 'success');
+            })
+            .catch(error => {
+                showNotification('Error: Failed to record productivity', 'error');
+                console.error('Error:', error);
+            });
+        }
+
+        function showNotification(message, type) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = 'notification ' + type;
+            notification.style.display = 'block';
+
+            // Hide notification after 5 seconds
+            setTimeout(function() {
+                notification.style.display = 'none';
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
