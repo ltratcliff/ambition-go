@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	_ "github.com/mattn/go-sqlite3"
 	"github.com/robfig/cron/v3"
+	_ "modernc.org/sqlite"
 )
 
 var db *sql.DB
@@ -25,7 +25,7 @@ func initDB() {
 	dbExists := !os.IsNotExist(err)
 
 	// Open database connection
-	db, err = sql.Open("sqlite3", "productivity.db")
+	db, err = sql.Open("sqlite", "productivity.db")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -128,6 +128,7 @@ func recordProductivityHandler(w http.ResponseWriter, r *http.Request) {
 	// Return success message
 	w.Header().Set("Content-Type", "application/json")
 	fmt.Fprintf(w, `{"status":"success", "message":"Productivity %s as %s"}`, action, status)
+	log.Printf("Productivity %s as %s", action, status)
 }
 
 // setupMidnightCheck sets up a scheduler to run checkMissingEntries at midnight
