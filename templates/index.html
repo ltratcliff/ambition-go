@@ -80,6 +80,11 @@
             color: #a94442;
             border: 1px solid #ebccd1;
         }
+        .info {
+            background-color: #d9edf7;
+            color: #31708f;
+            border: 1px solid #bce8f1;
+        }
     </style>
 </head>
 <body>
@@ -100,6 +105,20 @@
         document.getElementById('non-productive-btn').addEventListener('click', function() {
             recordProductivity('non-productive');
         });
+
+        window.onload = checkTodayProductivity;
+
+        function checkTodayProductivity() {
+            fetch('/ambition/api/check-today').then(response => response.json())
+            .then(data => {
+                if (data.status === 'exists') {
+                    showNotification('You have already recorded your productivity today', 'info');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
 
         function recordProductivity(status) {
             fetch('/ambition/api/record/' + status, {

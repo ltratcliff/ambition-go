@@ -131,6 +131,25 @@ func recordProductivityHandler(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Productivity %s as %s", action, status)
 }
 
+// Check if today has been entered
+func checkToday(w http.ResponseWriter, r *http.Request) {
+	// Get current date in YYYY-MM-DD format
+	currentDate := time.Now().Format("2006-01-02")
+
+	// Check if entry for current date already exists
+	var exists bool
+	var id int
+	err := db.QueryRow("SELECT id FROM productivity WHERE date = ?", currentDate).Scan(&id)
+	exists = err == nil
+
+	if exists {
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprintf(w, `{"status":"exists", "message":"Entry already exsits for %s"}`, currentDate)
+	} else {
+		return
+	}
+}
+
 // setupMidnightCheck sets up a scheduler to run checkMissingEntries at midnight
 func setupMidnightCheck() {
 	// Run the check immediately when the server starts
@@ -185,6 +204,7 @@ func main() {
 
 	// Define routes
 	s.HandleFunc("/", homeHandler).Methods("GET")
+	s.HandleFunc("/api/check-today", checkToday).Methods("GET")
 	s.HandleFunc("/api/record/{status}", recordProductivityHandler).Methods("POST")
 
 	// Serve static files
