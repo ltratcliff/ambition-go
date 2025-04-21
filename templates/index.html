@@ -90,6 +90,8 @@
 <body>
     <h1>Daily Productivity Tracker</h1>
 
+    <div id="status-display" style="margin: 20px 0; font-size: 18px; font-weight: bold; display: none;"></div>
+
     <div class="button-container">
         <button id="non-productive-btn">Non-Productive</button>
         <button id="productive-btn">Productive</button>
@@ -113,6 +115,20 @@
             .then(data => {
                 if (data.status === 'exists') {
                     showNotification('You have already recorded your productivity today', 'info');
+
+                    // Display the current status above the buttons
+                    const statusDisplay = document.getElementById('status-display');
+                    const statusText = data.productive_status.charAt(0).toUpperCase() + data.productive_status.slice(1);
+                    statusDisplay.textContent = 'Current Status: ' + statusText;
+
+                    // Set color based on status
+                    if (data.productive_status === 'productive') {
+                        statusDisplay.style.color = '#4CAF50'; // Green
+                    } else {
+                        statusDisplay.style.color = '#f44336'; // Red
+                    }
+
+                    statusDisplay.style.display = 'block';
                 }
             })
             .catch(error => {
@@ -130,6 +146,20 @@
             .then(response => response.json())
             .then(data => {
                 showNotification(data.message, 'success');
+
+                // Update the status display
+                const statusDisplay = document.getElementById('status-display');
+                const statusText = status.charAt(0).toUpperCase() + status.slice(1);
+                statusDisplay.textContent = 'Current Status: ' + statusText;
+
+                // Set color based on status
+                if (status === 'productive') {
+                    statusDisplay.style.color = '#4CAF50'; // Green
+                } else {
+                    statusDisplay.style.color = '#f44336'; // Red
+                }
+
+                statusDisplay.style.display = 'block';
             })
             .catch(error => {
                 showNotification('Error: Failed to record productivity', 'error');
