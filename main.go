@@ -9,7 +9,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/gorilla/mux"
 	"github.com/robfig/cron/v3"
 	_ "modernc.org/sqlite"
 )
@@ -88,8 +87,8 @@ func checkMissingEntries() {
 
 // Record productivity handler
 func recordProductivityHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	status := vars["status"]
+	// Extract status from URL path using PathValue
+	status := r.PathValue("status")
 
 	var productive int
 	if status == "productive" {
@@ -136,17 +135,25 @@ func checkToday(w http.ResponseWriter, r *http.Request) {
 	// Get current date in YYYY-MM-DD format
 	currentDate := time.Now().Format("2006-01-02")
 
-	// Check if entry for current date already exists
+	// Check if entry for current date already exists and get its status
 	var exists bool
 	var id int
-	err := db.QueryRow("SELECT id FROM productivity WHERE date = ?", currentDate).Scan(&id)
+	var productive int
+	err := db.QueryRow("SELECT id, productive FROM productivity WHERE date = ?", currentDate).Scan(&id, &productive)
 	exists = err == nil
 
 	if exists {
+		// Determine status string based on productive value
+		status := "non-productive"
+		if productive == 1 {
+			status = "productive"
+		}
+
 		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprintf(w, `{"status":"exists", "message":"Entry already exsits for %s"}`, currentDate)
+		fmt.Fprintf(w, `{"status":"exists", "message":"Entry already exists for %s", "productive_status":"%s"}`, currentDate, status)
 	} else {
-		return
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprintf(w, `{"status":"not_exists", "message":"No entry for %s"}`, currentDate)
 	}
 }
 
@@ -196,20 +203,37 @@ func main() {
 	// Set up midnight check for missing entries
 	setupMidnightCheck()
 
-	// Create router
-	r := mux.NewRouter()
+	// Create router using standard library
+	mux := http.NewServeMux()
 
-	// Create a subrouter with the /ambition prefix
-	s := r.PathPrefix("/ambition").Subrouter()
+	// Define routes with /ambition prefix
+	mux.HandleFunc("/ambition/", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/ambition/" {
+			http.NotFound(w, r)
+			return
+		}
+		homeHandler(w, r)
+	})
 
-	// Define routes
-	s.HandleFunc("/", homeHandler).Methods("GET")
-	s.HandleFunc("/api/check-today", checkToday).Methods("GET")
-	s.HandleFunc("/api/record/{status}", recordProductivityHandler).Methods("POST")
+	mux.HandleFunc("GET /ambition/api/check-today", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		checkToday(w, r)
+	})
+
+	mux.HandleFunc("POST /ambition/api/record/{status}", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		recordProductivityHandler(w, r)
+	})
 
 	// Serve static files
 	fs := http.FileServer(http.Dir("static"))
-	s.PathPrefix("/static/").Handler(http.StripPrefix("/ambition/static/", fs))
+	mux.Handle("/ambition/static/", http.StripPrefix("/ambition/static/", fs))
 
 	// Create static directory if it doesn't exist
 	if _, err := os.Stat("static"); os.IsNotExist(err) {
@@ -221,5 +245,5 @@ func main() {
 
 	// Start server
 	log.Println("Server starting on http://localhost:3131")
-	log.Fatal(http.ListenAndServe(":3131", r))
+	log.Fatal(http.ListenAndServe(":3131", mux))
 }
