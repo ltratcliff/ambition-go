@@ -60,7 +60,10 @@ func initTemplates() {
 
 // Home page handler
 func homeHandler(w http.ResponseWriter, r *http.Request) {
-	templates.ExecuteTemplate(w, "index.html", nil)
+	err := templates.ExecuteTemplate(w, "index.html", nil)
+	if err != nil {
+		return
+	}
 }
 
 // Check for missing entries and add default entries if needed
@@ -126,7 +129,10 @@ func recordProductivityHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Return success message
 	w.Header().Set("Content-Type", "application/json")
-	fmt.Fprintf(w, `{"status":"success", "message":"Productivity %s as %s"}`, action, status)
+	_, err = fmt.Fprintf(w, `{"status":"success", "message":"Productivity %s as %s"}`, action, status)
+	if err != nil {
+		return
+	}
 	log.Printf("Productivity %s as %s", action, status)
 }
 
@@ -150,10 +156,16 @@ func checkToday(w http.ResponseWriter, r *http.Request) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprintf(w, `{"status":"exists", "message":"Entry already exists for %s", "productive_status":"%s"}`, currentDate, status)
+		_, err := fmt.Fprintf(w, `{"status":"exists", "message":"Entry already exists for %s", "productive_status":"%s"}`, currentDate, status)
+		if err != nil {
+			return
+		}
 	} else {
 		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprintf(w, `{"status":"not_exists", "message":"No entry for %s"}`, currentDate)
+		_, err := fmt.Fprintf(w, `{"status":"not_exists", "message":"No entry for %s"}`, currentDate)
+		if err != nil {
+			return
+		}
 	}
 }
 
@@ -195,7 +207,12 @@ func setupMidnightCheck() {
 func main() {
 	// Initialize database
 	initDB()
-	defer db.Close()
+	defer func(db *sql.DB) {
+		err := db.Close()
+		if err != nil {
+
+		}
+	}(db)
 
 	// Initialize templates
 	initTemplates()
