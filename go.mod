@@ -3,7 +3,6 @@ module github.com/ltratcliff/ambition
 go 1.23.7
 
 require (
-	github.com/gorilla/mux v1.8.1
 	github.com/robfig/cron/v3 v3.0.1
 	modernc.org/sqlite v1.37.0
 )
